@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autoregressive Video Generation with Learnable Memory and Consistent Decoding</title>
+    <!-- Local fallback first, then CDN Tailwind to enhance when available -->
+    <link rel="stylesheet" href="styles/fallback.css">
+    <script src="https://cdn.tailwindcss.com" defer></script>
+    <!-- Include Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Use local Font Awesome to avoid CDN failures -->
+    <link rel="stylesheet" href="styles/fa/all.min.css">
+    <style>
+        /* Custom styles */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* Softer background */
+        }
+        .section-title {
+            border-bottom: 2px solid #3b82f6; /* Title underline */
+            padding-bottom: 8px;
+            margin-bottom: 24px;
+        }
+        .card {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+        .video-container {
+            /* Remove forced aspect ratio; container adapts to content */
+            overflow: hidden;
+            max-width: 100%;
+            border-radius: 8px;
+            /* No background to avoid black bars */
+        }
+        .video-container iframe,
+        .video-container video {
+            /* Keep original aspect ratio */
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+        .bibtex {
+            background-color: #1e293b;
+            color: #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            position: relative;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background-color: #334155;
+            color: #e2e8f0;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .copy-btn:hover {
+            background-color: #475569;
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <!-- Page container -->
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-12 max-w-5xl">
+
+        <!-- Title (authors anonymized/removed) -->
+        <header class="text-center mb-12 pt-6">
+            <!-- Title + domain icon -->
+            <h1 class="flex items-center justify-center text-4xl md:text-5xl font-bold text-gray-900 mb-4 gap-3">
+                <span class="text-blue-600">🎥</span>
+                Pack and Force Your Memory: Long-form and Consistent Video Generation
+            </h1>
+        
+            <!-- Conference/submission status tag (adjusted below title with larger font) -->
+
+        
+            <!-- Project link button -->
+            <!-- <div class="mt-4 flex flex-wrap justify-center items-center gap-4 px-4">
+                <a
+                href="https://anonymous.4open.science/r/ICLR2026-55FF"
+                target="_blank"
+                rel="noopener noreferrer"
+                style="
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    background-color: #2563eb; /* Corresponds to bg-blue-600 */
+                    color: white;
+                    font-weight: 600; /* Corresponds to font-semibold */
+                    padding: 0.75rem 1.5rem; /* Corresponds to py-3 px-6 */
+                    border-radius: 0.5rem; /* Corresponds to rounded-lg */
+                    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); /* shadow-md */
+                    text-decoration: none;
+                    transition: all 0.3s ease;
+                "
+                onmouseover="this.style.backgroundColor='#1D4ED8'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)';"
+                onmouseout="this.style.backgroundColor='#2563EB'; this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)';"
+                >
+                <span style="margin-right: 0.5rem;">🔗</span>
+                Project Link
+                </a> -->
+            <!-- </div> -->
+            
+            
+            <div class="mb-6 flex flex-col items-center">
+                <div class="flex flex-wrap justify-center gap-x-6 gap-y-2 text-lg text-gray-700 font-medium">
+                    <span>
+                        <a href="#" class="hover:text-blue-600">Xiaofei Wu</a><sup>1,2*</sup>
+                    </span>
+                    <span>
+                        <a href="#" class="hover:text-blue-600">Guozhen Zhang</a><sup>3,2</sup>
+                    </span>
+                    <span>
+                        <a href="#" class="hover:text-blue-600">Zhiyong Xu</a><sup>2</sup>
+                    </span>
+                    <span>
+                        <a href="#" class="hover:text-blue-600">Yuan Zhou</a><sup>2†</sup>
+                    </span>
+                    <span>
+                        <a href="#" class="hover:text-blue-600">Qinglin Lu</a><sup>2</sup>
+                    </span>
+                    <span>
+                        <a href="#" class="hover:text-blue-600">Xuming He</a><sup>1‡</sup>
+                    </span>
+                </div>
+                <div class="flex flex-wrap justify-center gap-x-6 gap-y-1 text-sm text-gray-500 mt-2">
+                    <span><sup>1</sup>ShanghaiTech University</span>
+                    <span><sup>2</sup>Tencent  Hunyuan</span>
+                    <span><sup>3</sup>Nanjing University</span>
+                </div>
+                <div class="flex flex-wrap justify-center gap-x-6 gap-y-1 text-sm text-gray-500 mt-2">
+                    <span>* Work is done during internship at Tencent Hunyuan</span><span>† Project leader</span><span>‡ Corresponding author</span>
+                </div>
+            </div>
+
+
+            <div class="mt-8 flex justify-center items-center space-x-4">
+                <div class="w-full flex justify-center items-center space-x-4 text-center">
+                    <a href="#" class="bg-blue-600 text-white font-semibold py-2 px-2 rounded-lg shadow-md hover:bg-blue-700 transition-colors duration-300 flex items-center justify-center">
+                        Arxiv
+                    </a>
+                    <a href="https://github.com/wuxiaofei01/PFVG" class="bg-gray-800 text-white font-semibold py-2 px-2 rounded-lg shadow-md hover:bg-gray-900 transition-colors duration-300 flex items-center justify-center" target="_blank" rel="noopener noreferrer">
+                        Code
+                    </a>
+                </div>
+            </div>
+           
+        </header>
+
+        <main>
+            <!-- Abstract -->
+            <section id="abstract" class="mb-16">
+                <div class="card p-8">
+                    <h2 class="text-2xl font-bold mb-4 section-title">Abstract</h2>
+                    <p class="text-gray-700 leading-relaxed">
+                        Long-form video generation presents a dual challenge: models must capture long-range dependencies while preventing the error accumulation inherent in autoregressive decoding. To address these challenges, we make two contributions. First, for dynamic context modeling, we propose MemoryPack, a learnable context-retrieval mechanism that leverages both textual and image information as global guidance to jointly model short- and long-term dependencies, achieving minute-level temporal consistency. This design scales gracefully with video length, preserves computational efficiency, and maintains linear complexity. Second, to mitigate error accumulation, we introduce Direct Forcing, an efficient single-step approximating strategy that improves training–inference alignment and thereby curtails error propagation during inference. Together, MemoryPack and Direct Forcing substantially enhance the context consistency and reliability  of long-form video generation, advancing the practical usability of autoregressive video models.
+                    </p>
+                </div>
+            </section>
+
+            <!-- Framework -->
+            <section id="framework" class="mb-16">
+                <h2 class="text-3xl font-bold text-center mb-8 section-title">Framework</h2>
+                <div class="card p-4">
+                     <img src="pic/frame.png" alt="Framework illustration" class="w-full h-auto object-cover rounded-lg">
+                </div>
+            </section>
+
+            <!-- Temporal consistency examples -->
+            <section id="video60s" class="mb-20">
+                <h2 class="text-3xl font-bold text-center mb-10 section-title">Temporal Consistency Video Generation</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    
+                    <div class="card group">
+                        <div class="video-container">
+                            <video controls preload="metadata" playsinline muted loop>
+                                <source src="mp4/30/37.mp4" type="video/mp4">
+                                Your browser does not support video playback.
+                            </video>
+                            <div class="play-icon-overlay"><i class="fas fa-play"></i></div>
+                        </div>
+                    </div>
+            
+                    <div class="card group">
+                        <div class="video-container">
+                            <video controls preload="metadata" playsinline muted loop>
+                                <source src="mp4/30/1.mp4" type="video/mp4">
+                                Your browser does not support video playback.
+                            </video>
+                            <div class="play-icon-overlay"><i class="fas fa-play"></i></div>
+                        </div>
+                    </div>
+            
+                    <div class="card group">
+                        <div class="video-container">
+                            <video controls preload="metadata" playsinline muted loop>
+                                <source src="mp4/60/126.mp4" type="video/mp4">
+                                Your browser does not support video playback.
+                            </video>
+                            <div class="play-icon-overlay"><i class="fas fa-play"></i></div>
+                        </div>
+                    </div>
+            
+                    <div class="card group">
+                        <div class="video-container">
+                            <video controls preload="metadata" playsinline muted loop>
+                                <source src="mp4/10/7.mp4" type="video/mp4">
+                                Your browser does not support video playback.
+                            </video>
+                            <div class="play-icon-overlay"><i class="fas fa-play"></i></div>
+                        </div>
+                    </div>
+            
+                </div>
+            </section>
+            
+            <style>
+            .play-icon-overlay {
+                pointer-events: none; /* Do not block clicks, allow clicking on video */
+            }
+            </style>
+            
+
+            <!-- 10s videos -->
+            <section id="video" class="mb-16">
+                <h2 class="text-3xl font-bold text-center mb-8 section-title">10s Videos</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div class="card p-4">
+                        <div class="video-container mb-3">
+                            <video controls preload="metadata" playsinline>
+                                <source data-src="mp4/10/156.mp4" type="video/mp4">
+                                Your browser does not support video playback.
+                            </video>
+                        </div>
+                    </div>
+                    <div class="card p-4">
+                        <div class="video-container mb-3">
+                             <video controls preload="metadata" playsinline>
+                                <source data-src="mp4/10/162.mp4" type="video/mp4">
+                                Your browser does not support video playback.
+                            </video>
+                        </div>
+                    </div>
+                    <div class="card p-4">
+                        <div class="video-container mb-3">
+                             <video controls preload="metadata" playsinline>
+                                <source data-src="mp4/10/171.mp4" type="video/mp4">
+                                Your browser does not support video playback.
+                            </video>
+                        </div>
+                    </div>
+                    <div class="card p-4">
+                        <div class="video-container mb-3">
+                            <video controls preload="metadata" playsinline>
+                                <source data-src="mp4/10/172.mp4" type="video/mp4">
+                                Your browser does not support video playback.
+                            </video>
+                        </div>
+                    </div>
+                    <div class="card p-4">
+                        <div class="video-container mb-3">
+                            <video controls preload="metadata" playsinline>
+                                <source data-src="mp4/10/191.mp4" type="video/mp4">
+                                Your browser does not support video playback.
+                            </video>
+                        </div>
+                    </div>
+                    <div class="card p-4">
+                        <div class="video-container mb-3">
+                            <video controls preload="metadata" playsinline>
+                                <source data-src="mp4/10/203.mp4" type="video/mp4">
+                                Your browser does not support video playback.
+                            </video>
+                        </div>
+                    </div>
+
+                </div>
+
+            </section>
+
+            <!-- 30s videos -->
+            <section id="video" class="mb-16">
+                <h2 class="text-3xl font-bold text-center mb-8 section-title">30s Videos</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+
+                    <div class="card p-4">
+                        <div class="video-container mb-3">
+                                <video controls preload="metadata" playsinline>
+                                <source data-src="mp4/30/132.mp4" type="video/mp4">
+                                Your browser does not support video playback.
+                            </video>
+                        </div>
+                    </div>
+
+                    <div class="card p-4">
+                        <div class="video-container mb-3">
+                            <video controls preload="metadata" playsinline>
+                                <source data-src="mp4/30/11.mp4" type="video/mp4">
+                                Your browser does not support video playback.
+                            </video>
+                        </div>
+                    </div>
+                    <div class="card p-4">
+                        <div class="video-container mb-3">
+                            <video controls preload="metadata" playsinline>
+                                <source data-src="mp4/30/13.mp4" type="video/mp4">
+                                Your browser does not support video playback.
+                            </video>
+                        </div>
+                    </div>
+                    <div class="card p-4">
+                        <div class="video-container mb-3">
+                            <video controls preload="metadata" playsinline>
+                                <source data-src="mp4/30/67.mp4" type="video/mp4">
+                                Your browser does not support video playback.
+                            </video>
+                        </div>
+                    </div>
+                    <div class="card p-4">
+                        <div class="video-container mb-3">
+                            <video controls preload="metadata" playsinline>
+                                <source data-src="mp4/30/82.mp4" type="video/mp4">
+                                Your browser does not support video playback.
+                            </video>
+                        </div>
+                    </div>
+                    <div class="card p-4">
+                        <div class="video-container mb-3">
+                            <video controls preload="metadata" playsinline>
+                                <source data-src="mp4/30/6.mp4" type="video/mp4">
+                                Your browser does not support video playback.
+                            </video>
+                        </div>
+                    </div>
+                </div>
+            <!-- 60s videos -->
+            <section id="video" class="mb-16">
+                <h2 class="text-3xl font-bold text-center mb-8 section-title">60s Videos</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div class="card p-4">
+                        <div class="video-container mb-3">
+                            <video controls preload="metadata" playsinline>
+                                <source src="mp4/60/284.mp4" type="video/mp4">
+                                Your browser does not support video playback.
+                            </video>
+                        </div>
+                    </div>
+                    
+                    <div class="card p-4">
+                        <div class="video-container mb-3">
+                            <video controls preload="metadata" playsinline>
+                                <source src="mp4/60/334.mp4" type="video/mp4">
+                                Your browser does not support video playback.
+                            </video>
+                        </div>
+                    </div>
+                    <div class="card p-4">
+                        <div class="video-container mb-3">
+                            <video controls preload="metadata" playsinline>
+                                <source src="mp4/60/339.mp4" type="video/mp4">
+                                Your browser does not support video playback.
+                            </video>
+                        </div>
+                    </div>
+                    <div class="card p-4">
+                        <div class="video-container mb-3">
+                            <video controls preload="metadata" playsinline>
+                                <source src="mp4/60/344.mp4" type="video/mp4">
+                                Your browser does not support video playback.
+                            </video>
+                        </div>
+                    </div>
+                    <div class="card p-4">
+                        <div class="video-container mb-3">
+                            <video controls preload="metadata" playsinline>
+                                <source src="mp4/60/217.mp4" type="video/mp4">
+                                Your browser does not support video playback.
+                            </video>
+                        </div>
+                    </div>
+                    <div class="card p-4">
+                        <div class="video-container mb-3">
+                            <video controls preload="metadata" playsinline>
+                                <source src="mp4/60/353.mp4" type="video/mp4">
+                                Your browser does not support video playback.
+                            </video>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Citation (template, anonymized) -->
+            <!--
+            <section id="citation" class="mb-16">
+                <h2 class="text-3xl font-bold text-center mb-8 section-title">Cite</h2>
+                <div class="card p-6">
+                    <div class="bibtex">
+                        <button class="copy-btn" onclick="copyBibtex()">
+                            <i class="fas fa-copy"></i> <span id="copy-text">Copy</span>
+                        </button>
+                        <pre id="bibtex-content">@article{Anon2025AutoregressiveVideo,
+    author  = {Anonymous},
+    title   = {Autoregressive Video Generation with MemoryPack and Direct-Forcing},
+    journal = {To Appear},
+    year    = {2025},
+    pages   = {1-10}
+}
+                        </pre>
+                    </div>
+                </div>
+            </section>
+            -->
+
+        </main>
+
+        <!-- Footer (optional, anonymized) -->
+        <!--
+        <footer class="text-center text-gray-500 pt-8 border-t">
+            <p>&copy; 2025 Anonymous. All rights reserved.</p>
+        </footer>
+        -->
+
+    </div>
+    <script>
+        // Unified interface: each 60s video concatenates multiple mp4s
+        document.addEventListener('DOMContentLoaded', function() {
+            const videos = document.querySelectorAll('.concat-60s-video');
+            videos.forEach(function(video) {
+                const srcs = JSON.parse(video.getAttribute('data-srcs'));
+                let idx = 0;
+                function playNext() {
+                    if (idx < srcs.length) {
+                        video.src = srcs[idx];
+                        video.load();
+                        video.play();
+                        idx++;
+                    }
+                }
+                video.addEventListener('ended', function() {
+                    playNext();
+                });
+                // Initialize the first video
+                playNext();
+            });
+        });
+    </script>
+    <script>
+        // Copy BibTeX
+        function copyBibtex() {
+            const bibtexContent = document.getElementById('bibtex-content').innerText;
+            // Prefer Clipboard API
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(bibtexContent).then(() => {
+                    const copyText = document.getElementById('copy-text');
+                    const originalText = copyText.innerText;
+                    copyText.innerText = 'Copied!';
+                    setTimeout(() => {
+                        copyText.innerText = originalText;
+                    }, 2000);
+                }).catch(err => {
+                    console.error('Copy failed: ', err);
+                });
+            } else {
+                // Fallback for older environments
+                const textArea = document.createElement("textarea");
+                textArea.value = bibtexContent;
+                textArea.style.position = "fixed"; 
+                textArea.style.left = "-9999px";
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    const copyText = document.getElementById('copy-text');
+                    const originalText = copyText.innerText;
+                    copyText.innerText = 'Copied!';
+                    setTimeout(() => {
+                        copyText.innerText = originalText;
+                    }, 2000);
+                } catch (err) {
+                    console.error('Copy failed', err);
+                }
+                document.body.removeChild(textArea);
+            }
+        }
+
+        // Lazy-load videos: set real src when entering viewport
+        (function lazyLoadVideos() {
+            const videoSources = document.querySelectorAll('video source[data-src]');
+            if (!('IntersectionObserver' in window)) {
+                // Compatibility: load directly
+                videoSources.forEach(srcEl => {
+                    srcEl.src = srcEl.getAttribute('data-src');
+                    const videoEl = srcEl.parentElement;
+                    if (videoEl && typeof videoEl.load === 'function') videoEl.load();
+                });
+                return;
+            }
+            const io = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const video = entry.target;
+                        const source = video.querySelector('source[data-src]');
+                        if (source && !source.src) {
+                            source.src = source.getAttribute('data-src');
+                            video.load();
+                        }
+                        observer.unobserve(video);
+                    }
+                });
+            }, { rootMargin: '200px 0px' });
+
+            document.querySelectorAll('video').forEach(video => io.observe(video));
+        })();
+    </script>
+
+</body>
+</html>
