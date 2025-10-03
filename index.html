@@ -90,32 +90,6 @@
             <!-- Conference/submission status tag (adjusted below title with larger font) -->
 
         
-            <!-- Project link button -->
-            <!-- <div class="mt-4 flex flex-wrap justify-center items-center gap-4 px-4">
-                <a
-                href="https://anonymous.4open.science/r/ICLR2026-55FF"
-                target="_blank"
-                rel="noopener noreferrer"
-                style="
-                    display: inline-flex;
-                    align-items: center;
-                    justify-content: center;
-                    background-color: #2563eb; /* Corresponds to bg-blue-600 */
-                    color: white;
-                    font-weight: 600; /* Corresponds to font-semibold */
-                    padding: 0.75rem 1.5rem; /* Corresponds to py-3 px-6 */
-                    border-radius: 0.5rem; /* Corresponds to rounded-lg */
-                    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); /* shadow-md */
-                    text-decoration: none;
-                    transition: all 0.3s ease;
-                "
-                onmouseover="this.style.backgroundColor='#1D4ED8'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)';"
-                onmouseout="this.style.backgroundColor='#2563EB'; this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)';"
-                >
-                <span style="margin-right: 0.5rem;">🔗</span>
-                Project Link
-                </a> -->
-            <!-- </div> -->
             
             
             <div class="mb-6 flex flex-col items-center">
@@ -152,7 +126,7 @@
 
             <div class="mt-8 flex justify-center items-center space-x-4">
                 <div class="w-full flex justify-center items-center space-x-4 text-center">
-                    <a href="#" class="bg-blue-600 text-white font-semibold py-2 px-2 rounded-lg shadow-md hover:bg-blue-700 transition-colors duration-300 flex items-center justify-center">
+                    <a href="https://arxiv.org/abs/2510.01784" class="bg-blue-600 text-white font-semibold py-2 px-2 rounded-lg shadow-md hover:bg-blue-700 transition-colors duration-300 flex items-center justify-center">
                         Arxiv
                     </a>
                     <a href="https://github.com/wuxiaofei01/PFVG" class="bg-gray-800 text-white font-semibold py-2 px-2 rounded-lg shadow-md hover:bg-gray-900 transition-colors duration-300 flex items-center justify-center" target="_blank" rel="noopener noreferrer">
@@ -404,6 +378,39 @@
                     </div>
                 </div>
             </section>
+<!--             
+            <section id="citation" class="mb-16">
+                <h2 class="text-3xl font-bold text-center mb-8 section-title">citation</h2>
+                <div class="card p-6">
+                    <div class="bibtex mb-4">
+                        <button class="copy-btn" onclick="copyBibtex()">
+                            <i class="fas fa-copy"></i> <span id="copy-text">copy</span>
+                        </button>
+                        <pre id="bibtex-content" style="white-space: pre-wrap; word-break: break-all;">@article{Wu2026PFVG,
+author  = {Xiaofei Wu and Guozhen Zhang and Zhiyong Xu and Yuan Zhou and Qinglin Lu and Xuming He},
+title   = {Pack and Force Your Memory: Long-form and Consistent Video Generation},
+journal = {ICLR},
+year    = {2026},
+}
+                        </pre>
+                    </div>
+                    <div class="text-gray-600 text-sm mt-2">
+                        To ensure fairness in the evaluation, all the above conditional images are from
+                        <a href="https://github.com/Vchitect/VBench/tree/master/vbench2_beta_i2v#content" target="_blank" class="text-blue-600 underline hover:text-blue-800">VBench</a>。
+                    </div>
+                </div>
+            </section>
+            <script>
+            function copyBibtex() {
+                const content = document.getElementById('bibtex-content').innerText;
+                navigator.clipboard.writeText(content).then(function() {
+                    document.getElementById('copy-text').innerText = 'Copied';
+                    setTimeout(function() {
+                        document.getElementById('copy-text').innerText = 'Copy';
+                    }, 1500);
+                });
+            }
+            </script> -->
 
             <!-- Citation (template, anonymized) -->
             <!--
